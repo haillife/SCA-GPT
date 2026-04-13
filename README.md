@@ -122,7 +122,7 @@ The power trace dataset used in this work covers:
 
 Due to the large size of trace files (~29GB total), the dataset is not included in this repository. To request access, please contact:
 
-**Yaoling Ding** (Corresponding Author): dyl19@bit.edu.cn
+**Wenquan Zhou**: zhouwenquan@bit.edu.cn
 
 ## Citation
 
