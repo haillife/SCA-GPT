@@ -1,0 +1,115 @@
+  [
+    {
+      "title": "ISO/IEC 17825 | Overall Test Flow",
+      "steps": [
+        {
+          "step": "Step 1: Perform Timing Analysis (TA)",
+          "detail": "Run timing analysis to check for time-based leakages. Only if the implementation passes TA, continue to the next step."
+        },
+        {
+          "step": "Step 2: Perform Simple Power Analysis (SPA)",
+          "detail": "Run simple power analysis to detect visually obvious leakage patterns. Only if SPA passes, continue to DPA."
+        },
+        {
+          "step": "Step 3: Perform Differential Power Analysis (DPA)",
+          "detail": "Run differential power analysis to check for subtle data-dependent correlations in power traces. This is the final step."
+        },
+        {
+          "step": "Step 4: Document and report results",
+          "detail": "Summarize the outcomes of TA, SPA, and DPA. Clearly indicate which tests passed or failed, provide supporting metrics (e.g., maximum t-values for DPA), and explain the reasoning behind the final security assessment."
+        }
+      ]
+    },
+    {
+      "title": "ISO/IEC 17825 | Timing Analysis (TA)",
+      "steps": [
+        {
+          "step": "Step 1: Prepare input parameters",
+          "detail": "The user must provide: the power trace file (.npy_file), sampling_rate (Hz), target device clock_freq (Hz), number of traces (num_traces), and number of sample points per trace (num_points)."
+        },
+        {
+          "step": "Step 2: Run the TimingAnalyzer tool",
+          "detail": "Invoke the TimingAnalyzer tool with the JSON input. The tool computes the average threshold crossing time for fixed-input traces (T1) and random-input traces (T2)."
+        },
+        {
+          "step": "Step 3: Compute the timing difference",
+          "detail": "The tool returns the absolute difference |T1 - T2| (in seconds). This difference is calculated based on the given sampling_rate and clock_freq."
+        },
+        {
+          "step": "Step 4: Evaluate security",
+          "detail": "Compare the difference |T1 - T2| with one clock cycle (1/clock_freq seconds). If |T1 - T2| is smaller than one clock cycle, the implementation is considered secure against timing attacks. If |T1 - T2| is greater than or equal to one clock cycle, the implementation is insecure."
+        }
+      ]
+    },
+    {
+      "title": "ISO/IEC 17825 | Simple Power Analysis (SPA)",
+      "steps": [
+        {
+          "step": "Step 1: Determine applicability",
+          "detail": "If the algorithm is symmetric (e.g., AES), SPA is skipped and automatically marked as passed because the trace does not include an observable key-expansion process (thus no 0/1 sequence can be derived). If it is asymmetric (e.g., ECC or RSA), continue with SPA."
+        },
+        {
+          "step": "Step 2: Segment the waveform",
+          "detail": "Divide the captured waveform into 36 segments. The default method is equal segmentation (if not perfectly divisible, choose a near divisor). Visualize the segmentation to verify alignment. If equal segmentation fails repeatedly, use peak-based segmentation: apply findpeaks to detect 36 segment boundaries (often 37 peaks/valleys, with the last one replaced by the waveform end). Ensure the spacing between peaks is reasonably uniform."
+        },
+        {
+          "step": "Step 3: Classify segments",
+          "detail": "Classify the segments by considering both numerical data and visual information from the waveform.\n- For the visual aspect, you can use techniques such as shape recognition, peak count, or image-based anomaly detection methods.\n- For the numerical data, consider dimensionality reduction followed by clustering to separate the 36 segments into two classes: 0 and 1. Recommended dimensionality reduction methods: PCA (baseline), and also try UMAP or t-SNE. Recommended clustering methods: k-means (baseline), and also try DBSCAN or hierarchical clustering. \nAttempt policy:\n 1) First tune classification parameters or switch to alternative dimensionality-reduction and clustering methods.\n 2) If classification still fails after multiple attempts, apply preprocessing (e.g., filtering, normalization) and retry classification. Always visualize the results for inspection."
+        },
+        {
+          "step": "Step 4: Validate the sequence",
+          "detail": "Check whether the classification sequence satisfies the rules:\n- Exactly 24 segments of type 0 and 12 of type 1(Note: sometimes labels may flip with 24 type 1 and 12 type 0).\n- The first segment must be 0.\n- There must be at least one type 0 segment between any two type 1 segments.\n\nIf the rules are not satisfied, go back to Step 3 and re-classify (continue parameter tuning / method switching / preprocessing as described there), then validate again. If the rules are satisfied, print the final label sequence.\nIf the classification fails to satisfy the rules after multiple attempts (e.g., 15 tries), stop retrying and proceed to Step 5."
+        },
+        {
+          "step": "Step 5: Make the security determination",
+          "detail": "If a valid sequence satisfying all rules is found, the implementation is considered insecure(SPA succeeded). If no valid sequence can be obtained within the attempt limit, the implementation is considered secure against SPA."
+        }
+      ]
+    },
+    {
+      "title": "ISO/IEC 17825 | Differential Power Analysis (DPA)",
+      "steps": [
+        {
+          "step": "Step 1: Prepare input parameters",
+          "detail": "Provide the power trace file (.npy_file), the number of traces (num_traces), and the number of sample points per trace (num_points). These will be used by the TVLA tool."
+        },
+        {
+          "step": "Step 2: Run the TVLAAnalyzer tool",
+          "detail": "Invoke the TVLAAnalyzer with the JSON input. The tool will compute Test Vector Leakage Assessment (TVLA) statistics and return a t-value series for each sample point in the trace."
+        },
+        {
+          "step": "Step 3: Analyze the t-values",
+          "detail": "Inspect the output t-values. The tool can also generate a plot with t-values across time, highlighting the ±4.5 threshold line."
+        },
+        {
+          "step": "Step 4: Evaluate security",
+          "detail": "If the maximum absolute t-value exceeds 4.5, the implementation is considered vulnerable to DPA attacks. Otherwise, if all |t-values| remain below 4.5, the implementation is considered secure."
+        }
+      ]
+    },
+    {
+      "title": "AES-128 | Correlation Power Analysis (CPA)",
+      "steps": [
+        {
+          "step": "Step 1: Preprocessing – Low-pass Filtering",
+          "detail": "Apply low-pass filtering to the input waveform to suppress high-frequency noise. The user can directly use the built-in low-pass filtering tool with default parameter 10."
+        },
+        {
+          "step": "Step 2: Preprocessing – Static Alignment Parameter Selection",
+          "detail": "Before performing static alignment, use the Anchor Selection Tool to determine alignment parameters. The tool output includes three fields: reference_waveform_index (e.g., 10), start_point (e.g., 8895), and length (e.g., 6791). These parameters define the alignment window and reference trace used for synchronization across all traces."
+        },
+        {
+          "step": "Step 3: Preprocessing – Static Alignment",
+          "detail": "Invoke the Static Alignment Tool with the parameters obtained in Step 2. The tool aligns all traces based on the specified reference waveform and window range. This step ensures temporal consistency among traces, correcting for acquisition jitter and drift."
+        },
+        {
+          "step": "Step 4: CPA Parameters Selection",
+          "detail": "Define the CPA parameters. The default leakage model is S-box output with Hamming Weight (S-box_out_HW). The number of key candidates to be tested is 4. These parameters can be directly loaded by the CPA tool. Ensure that plaintexts and traces are correctly associated and that each trace corresponds to one AES encryption execution."
+        },
+        {
+          "step": "Step 5: CPA",
+          "detail": "Run the CPA tool with the aligned trace dataset. The tool computes the Pearson correlation coefficient between each key hypothesis’s predicted leakage (derived from the parameters obtained in Step 4) and the measured power values across time samples. The result includes the correlation matrix and key ranking."
+        }
+      ]
+    }
+  ]

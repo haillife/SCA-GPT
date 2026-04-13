@@ -1,0 +1,34 @@
+# Ignore everything
+*
+
+# Allow specific files
+!.gitignore
+!README.md
+!LICENSE
+
+# Code files
+!langchain_react_agent_with_RAG_md.py
+!python_jupyter_kernel_tool.py
+!rag_retrieve_and_summarize_tool.py
+!smartcard_tool.py
+!timing_analysis_tool.py
+!trace_capture_tool.py
+!tvla_tool.py
+
+# RAG module
+!RAG/
+!RAG/**
+
+# RAG_Data
+!RAG_Data/
+!RAG_Data/**
+
+# Qdrant_Data (only all-mpnet-base-v2_cosine_v1.0)
+!Qdrant_Data/
+!Qdrant_Data/all-mpnet-base-v2_cosine_v1.0/
+!Qdrant_Data/all-mpnet-base-v2_cosine_v1.0/**
+
+# Still ignore caches
+__pycache__/
+*.pyc
+.idea/
